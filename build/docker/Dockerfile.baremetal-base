@@ -1,6 +1,25 @@
 FROM --platform=linux/amd64 registry.cn-beijing.aliyuncs.com/yunionio/centos-build:1.1-4 as build
 RUN yum install -y https://iso.yunion.cn/vm-images/baremetal-pxerom-1.1.0-21060506.x86_64.rpm
 
+FROM archlinux:base-devel-20210530.0.24217 as grub-stage
+
+RUN echo 'Server = http://mirrors.aliyun.com/archlinux/$repo/os/$arch' > /etc/pacman.d/mirrorlist
+RUN pacman -Syy
+RUN pacman --noconfirm -S grub
+
+RUN grub-mkimage -d /usr/lib/grub/i386-pc/ -O i386-pc-pxe -o /root/grub_booti386 -p '/grub' pxe tftp
+
+RUN grub-mkimage -d /usr/lib/grub/x86_64-efi/ -O x86_64-efi -o /root/grub_bootx64.efi -p '/grub' efinet tftp
+
+RUN mkdir -p /tftp/grub
+
+RUN cp /root/grub_booti386 /tftp
+RUN cp -rf /usr/lib/grub/i386-pc /tftp/grub
+
+RUN cp /root/grub_bootx64.efi /tftp
+RUN cp -rf /usr/lib/grub/x86_64-efi /tftp/grub
+
+
 FROM registry.cn-beijing.aliyuncs.com/yunionio/onecloud-base:v0.2
 
 MAINTAINER "Yaoqi Wan <wanyaoqi@yunionyun.com>"
@@ -33,3 +52,9 @@ COPY --from=build ./opt/cloud/yunion/baremetal/libutil.c32 /opt/cloud/yunion/bar
 COPY --from=build ./opt/cloud/yunion/baremetal/lpxelinux.0 /opt/cloud/yunion/baremetal
 COPY --from=build ./opt/cloud/yunion/baremetal/menu.c32 /opt/cloud/yunion/baremetal
 COPY --from=build ./opt/cloud/yunion/baremetal/pxelinux.0 /opt/cloud/yunion/baremetal
+
+# copy grub file
+COPY --from=grub-stage /tftp/grub_booti386 /opt/cloud/yunion/baremetal
+
+COPY --from=grub-stage /tftp/grub_bootx64.efi /opt/cloud/yunion/baremetal
+COPY --from=grub-stage /tftp/grub /opt/cloud/yunion/baremetal/grub

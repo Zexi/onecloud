@@ -96,7 +96,8 @@ func GetNicDHCPConfig(
 		conf.BootServer = serverIP
 		switch arch {
 		case PXE_CLIENT_ARCH_EFI_BC, PXE_CLIENT_ARCH_EFI_X86_64:
-			conf.BootFile = "bootx64.efi"
+			// conf.BootFile = "bootx64.efi"
+			conf.BootFile = "grub_bootx64.efi"
 		case PXE_CLIENT_ARCH_EFI_IA32:
 			conf.BootFile = "bootia32.efi"
 		default:
@@ -105,7 +106,8 @@ func GetNicDHCPConfig(
 			//}else {
 			// bootFile := "pxelinux.0"
 			//}
-			conf.BootFile = "lpxelinux.0"
+			// conf.BootFile = "lpxelinux.0"
+			conf.BootFile = "grub_booti386"
 		}
 		pxePath := filepath.Join(o.Options.TftpRoot, conf.BootFile)
 		if f, err := os.Open(pxePath); err != nil {
